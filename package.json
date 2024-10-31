@@ -1,37 +1,40 @@
 {
-	"name": "zoapi",
-	"version": "0.1.0",
-	"description": "An ergonomic way to generate OpenAPI schemas using Zod",
-	"type": "module",
-	"scripts": {
-		"test": "vitest",
-		"lint": "biome lint",
-		"format": "biome format",
-		"check": "biome check",
-		"build": "tsup"
-	},
-	"keywords": ["openapi", "zod"],
-	"exports": {
-		".": {
-			"import": "./dist/api.js",
-			"require": "./dist/api.cjs",
-			"types": "./dist/api.d.ts"
-		}
-	},
-	"author": "https://github.com/maybemaby",
-	"license": "MIT",
-	"devDependencies": {
-		"@biomejs/biome": "^1.9.4",
-		"@types/node": "^22.8.4",
-		"tsup": "^8.3.5",
-		"typescript": "^5.6.3",
-		"vitest": "^2.1.4",
-		"zod": "^3.23.8"
-	},
-	"dependencies": {
-		"zod-openapi": "^3.3.0"
-	},
-	"peerDependencies": {
-		"zod": "^3.23.8"
-	}
+  "name": "zoapi",
+  "version": "0.1.1",
+  "description": "An ergonomic way to generate OpenAPI schemas using Zod",
+  "type": "module",
+  "scripts": {
+    "test": "vitest",
+    "lint": "biome lint",
+    "format": "biome format",
+    "check": "biome check",
+    "build": "tsup"
+  },
+  "keywords": [
+    "openapi",
+    "zod"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/api.js",
+      "require": "./dist/api.cjs",
+      "types": "./dist/api.d.ts"
+    }
+  },
+  "author": "https://github.com/maybemaby",
+  "license": "MIT",
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^22.8.4",
+    "tsup": "^8.3.5",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4",
+    "zod": "^3.23.8"
+  },
+  "dependencies": {
+    "zod-openapi": "^3.3.0"
+  },
+  "peerDependencies": {
+    "zod": "^3.23.8"
+  }
 }

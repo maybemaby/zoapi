@@ -1,4 +1,5 @@
 # zoapi
+![GitHub License](https://img.shields.io/github/license/maybemaby/zoapi) [![npm](https://img.shields.io/npm/v/fastify-iron-session)](https://www.npmjs.com/package/zoapi)
 
 zoapi provides a simple way to generate OpenAPI schemas using zod and a simple api.
 
@@ -29,11 +30,11 @@ const userSchema = z.object({
 
 const createUserSchema = userSchema.omit({ id: true });
 
-api.get("/users").responds(200, z.array(userSchema)).withTags(["users"]);
+api.get("/users").responds("200", z.array(userSchema)).withTags(["users"]);
 
-api.post("/users").body(createUserSchema).responds(201, z.number().int()).withTags(["users"]);
+api.post("/users").body(createUserSchema).responds("201", z.number().int()).withTags(["users"]);
 
-api.get("/users/{id}").pathParams(z.object({ id: z.string() })).responds(200, userSchema).withTags(["users"]);
+api.get("/users/{id}").pathParams(z.object({ id: z.string() })).responds("200", userSchema).withTags(["users"]);
 
 console.log(api.document());
 ```
