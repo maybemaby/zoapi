@@ -1,194 +1,203 @@
-import { z } from "zod";
-import { createDocument, ZodOpenApiOperationObject, ZodOpenApiPathsObject } from "zod-openapi";
-import { ZodOpenApiObject } from "zod-openapi"
-import 'zod-openapi/extend'
+import type { z } from "zod";
+import {
+	type ZodOpenApiOperationObject,
+	type ZodOpenApiPathsObject,
+	createDocument,
+} from "zod-openapi";
+import type { ZodOpenApiObject } from "zod-openapi";
+import "zod-openapi/extend";
 
-type Method = "get" | "post" | "put" | "delete" | "options" | "head" | "patch" | "trace"
+type Method =
+	| "get"
+	| "post"
+	| "put"
+	| "delete"
+	| "options"
+	| "head"
+	| "patch"
+	| "trace";
 
-type StatusCode = `${1 | 2 | 3 | 4 | 5}${string}`
+type StatusCode = `${1 | 2 | 3 | 4 | 5}${string}`;
 
 class MethodBuilder {
-    pathBuilder: PathBuilder
-    method: Method
+	pathBuilder: PathBuilder;
+	method: Method;
 
-    pathSchema: z.AnyZodObject | null = null
-    querySchema: z.AnyZodObject | null = null
-    bodySchema: z.ZodType | null = null
-    responseSchema: Record<StatusCode, z.ZodType> = {}
-    tags: string[] = []
+	pathSchema: z.AnyZodObject | null = null;
+	querySchema: z.AnyZodObject | null = null;
+	bodySchema: z.ZodType | null = null;
+	responseSchema: Record<StatusCode, z.ZodType> = {};
+	tags: string[] = [];
 
-    constructor(pathBuilder: PathBuilder, method: Method) {
-        this.pathBuilder = pathBuilder
-        this.method = method
+	constructor(pathBuilder: PathBuilder, method: Method) {
+		this.pathBuilder = pathBuilder;
+		this.method = method;
 
-        this.pathBuilder.methodBuilders.push(this)
-    }
+		this.pathBuilder.methodBuilders.push(this);
+	}
 
+	pathParams(schema: z.AnyZodObject) {
+		this.pathSchema = schema;
 
-    pathParams(schema: z.AnyZodObject) {
-        this.pathSchema = schema
+		return this;
+	}
 
-        return this
-    }
+	query(schema: z.AnyZodObject) {
+		this.querySchema = schema;
 
-    query(schema: z.AnyZodObject) {
-        this.querySchema = schema
+		return this;
+	}
 
-        return this
-    }
+	body(schema: z.ZodType) {
+		this.bodySchema = schema;
 
-    body(schema: z.ZodType) {
-        this.bodySchema = schema
+		return this;
+	}
 
-        return this
-    }
+	responds(statusCode: StatusCode, schema: z.ZodType) {
+		this.responseSchema[statusCode] = schema;
 
-    responds(statusCode: StatusCode, schema: z.ZodType) {
+		return this;
+	}
 
-        this.responseSchema[statusCode] = schema
+	withTags(tags: string[]) {
+		this.tags = tags;
+		return this;
+	}
 
-        return this
-    }
+	build(): ZodOpenApiOperationObject {
+		const op: ZodOpenApiOperationObject = {
+			responses: {},
+		};
 
-    withTags(tags: string[]) {
-        this.tags = tags
-        return this
-    }
+		if (this.pathSchema || this.querySchema) {
+			op.requestParams = {};
 
-    build(): ZodOpenApiOperationObject {
-        let op: ZodOpenApiOperationObject = {
-            responses: {}
-        }
+			if (this.pathSchema) {
+				op.requestParams.path = this.pathSchema;
+			}
 
-        if (this.pathSchema || this.querySchema) {
+			if (this.querySchema) {
+				op.requestParams.query = this.querySchema;
+			}
+		}
 
-            op.requestParams = {}
+		if (this.bodySchema) {
+			op.requestBody = {
+				content: {
+					"application/json": {
+						schema: this.bodySchema,
+					},
+				},
+			};
+		}
 
-            if (this.pathSchema) {
-                op.requestParams.path = this.pathSchema
-            }
+		if (Object.keys(this.responseSchema).length > 0) {
+			op.responses = {};
 
-            if (this.querySchema) {
-                op.requestParams.query = this.querySchema
-            }
-        }
+			for (const statusCode in this.responseSchema) {
+				const code = statusCode as StatusCode;
 
-        if (this.bodySchema) {
-            op.requestBody = {
-                content: {
-                    'application/json': {
-                        schema: this.bodySchema
-                    }
-                }
-            }
-        }
+				// @ts-expect-error Description not required
+				op.responses[code] = {
+					content: {
+						"application/json": {
+							schema: this.responseSchema[code],
+						},
+					},
+				};
+			}
+		}
 
-        if (Object.keys(this.responseSchema).length > 0) {
-            op.responses = {}
+		if (this.tags.length > 0) {
+			op.tags = this.tags;
+		}
 
-            for (const statusCode in this.responseSchema) {
-                let code = statusCode as StatusCode
-
-                op.responses[code] = {
-                    content: {
-                        'application/json': {
-                            schema: this.responseSchema[code]
-                        },
-                    }
-                }
-            }
-        }
-
-        if (this.tags.length > 0) {
-            op.tags = this.tags
-        }
-
-        return op
-    }
+		return op;
+	}
 }
 
 class PathBuilder {
-    path: string
-    methodBuilders: MethodBuilder[] = []
+	path: string;
+	methodBuilders: MethodBuilder[] = [];
 
+	constructor(path: string) {
+		this.path = path;
+	}
 
-    constructor(path: string) {
-        this.path = path
-    }
-
-    build(): ZodOpenApiPathsObject {
-        return {
-            [this.path]: this.methodBuilders.reduce((acc, mb) => {
-                acc[mb.method] = mb.build()
-                return acc
-            }, {} as Record<Method, ZodOpenApiOperationObject>)
-        }
-    }
+	build(): ZodOpenApiPathsObject {
+		return {
+			[this.path]: this.methodBuilders.reduce(
+				(acc, mb) => {
+					acc[mb.method] = mb.build();
+					return acc;
+				},
+				{} as Record<Method, ZodOpenApiOperationObject>,
+			),
+		};
+	}
 }
 
 export class Api {
+	paths: Record<string, PathBuilder> = {};
 
-    paths: Record<string, PathBuilder> = {}
+	public info: ZodOpenApiObject["info"];
+	public openapi: ZodOpenApiObject["openapi"];
 
-    public info: ZodOpenApiObject["info"]
-    public openapi: ZodOpenApiObject["openapi"]
+	constructor(
+		openapi: ZodOpenApiObject["openapi"],
+		info: ZodOpenApiObject["info"],
+	) {
+		this.info = info;
+		this.openapi = openapi;
+	}
 
-    constructor(openapi: ZodOpenApiObject["openapi"], info: ZodOpenApiObject["info"]) {
-        this.info = info
-        this.openapi = openapi
-    }
+	private method(path: string, method: Method): MethodBuilder {
+		const existingBuilder = this.paths[path];
 
-    private method(path: string, method: Method): MethodBuilder {
+		if (existingBuilder) {
+			return new MethodBuilder(existingBuilder, method);
+		}
 
-        const existingBuilder = this.paths[path]
+		const pb = new PathBuilder(path);
+		this.paths[path] = pb;
 
-        if (existingBuilder) {
-            return new MethodBuilder(existingBuilder, method)
-        }
+		return new MethodBuilder(pb, method);
+	}
 
-        const pb = new PathBuilder(path)
-        this.paths[path] = pb
+	get(path: string): MethodBuilder {
+		return this.method(path, "get");
+	}
 
-        return new MethodBuilder(pb, method)
-    }
+	post(path: string): MethodBuilder {
+		return this.method(path, "post");
+	}
 
+	put(path: string): MethodBuilder {
+		return this.method(path, "put");
+	}
 
-    get(path: string): MethodBuilder {
-        return this.method(path, "get")
-    }
+	delete(path: string): MethodBuilder {
+		return this.method(path, "delete");
+	}
 
-    post(path: string): MethodBuilder {
+	document(): ReturnType<typeof createDocument> {
+		const object: ZodOpenApiObject = {
+			info: this.info,
+			openapi: this.openapi,
+			paths: {},
+		};
 
-        return this.method(path, "post")
-    }
+		for (const path in this.paths) {
+			const pathBuilder = this.paths[path];
+			const pathObject = pathBuilder.build();
 
-    put(path: string): MethodBuilder {
-        return this.method(path, "put")
-    }
+			object.paths![path] = {
+				...object.paths![path],
+				...pathObject[path],
+			};
+		}
 
-    delete(path: string): MethodBuilder {
-
-        return this.method(path, "delete")
-    }
-
-    document(): ReturnType<typeof createDocument> {
-
-        let object: ZodOpenApiObject = {
-            info: this.info,
-            openapi: this.openapi,
-            paths: {}
-        }
-
-        for (const path in this.paths) {
-            const pathBuilder = this.paths[path]
-            const pathObject = pathBuilder.build()
-
-            object.paths![path] = {
-                ...object.paths![path],
-                ...pathObject[path]
-            }
-        }
-
-        return createDocument(object)
-    }
+		return createDocument(object);
+	}
 }
