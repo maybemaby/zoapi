@@ -26,6 +26,8 @@ type ResponseOptions = {
 class MethodBuilder {
 	pathBuilder: PathBuilder;
 	method: Method;
+	description?: string;
+	summary?: string;
 
 	pathSchema: z.AnyZodObject | null = null;
 	querySchema: z.AnyZodObject | null = null;
@@ -39,6 +41,7 @@ class MethodBuilder {
 		this.method = method;
 
 		this.pathBuilder.methodBuilders.push(this);
+		this.summary = `${method.toUpperCase()} ${pathBuilder.path}`;
 	}
 
 	pathParams(schema: z.AnyZodObject) {
@@ -121,6 +124,8 @@ class MethodBuilder {
 		if (this.tags.length > 0) {
 			op.tags = this.tags;
 		}
+
+		op.summary = this.summary
 
 		return op;
 	}
