@@ -1,5 +1,5 @@
 # zoapi
-![GitHub License](https://img.shields.io/github/license/maybemaby/zoapi) [![npm](https://img.shields.io/npm/v/fastify-iron-session)](https://www.npmjs.com/package/zoapi)
+![GitHub License](https://img.shields.io/github/license/maybemaby/zoapi) [![npm](https://img.shields.io/npm/v/zoapi)](https://www.npmjs.com/package/zoapi)
 
 zoapi provides a simple way to generate OpenAPI schemas using zod and a simple api.
 

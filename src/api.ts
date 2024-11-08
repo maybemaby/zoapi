@@ -19,6 +19,10 @@ type Method =
 
 type StatusCode = `${1 | 2 | 3 | 4 | 5}${string}`;
 
+type ResponseOptions = {
+	description?: string;
+}
+
 class MethodBuilder {
 	pathBuilder: PathBuilder;
 	method: Method;
@@ -27,6 +31,7 @@ class MethodBuilder {
 	querySchema: z.AnyZodObject | null = null;
 	bodySchema: z.ZodType | null = null;
 	responseSchema: Record<StatusCode, z.ZodType> = {};
+	responseOptions: Record<StatusCode, ResponseOptions> = {};
 	tags: string[] = [];
 
 	constructor(pathBuilder: PathBuilder, method: Method) {
@@ -54,8 +59,12 @@ class MethodBuilder {
 		return this;
 	}
 
-	responds(statusCode: StatusCode, schema: z.ZodType) {
+	responds(statusCode: StatusCode, schema: z.ZodType, options?: ResponseOptions) {
 		this.responseSchema[statusCode] = schema;
+
+		if (options) {
+			this.responseOptions[statusCode] = options;
+		}
 
 		return this;
 	}
@@ -98,13 +107,13 @@ class MethodBuilder {
 			for (const statusCode in this.responseSchema) {
 				const code = statusCode as StatusCode;
 
-				// @ts-expect-error Description not required
 				op.responses[code] = {
 					content: {
 						"application/json": {
 							schema: this.responseSchema[code],
 						},
 					},
+					description: this.responseOptions[code]?.description ?? "",
 				};
 			}
 		}

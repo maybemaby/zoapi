@@ -1,8 +1,12 @@
 {
   "name": "zoapi",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "An ergonomic way to generate OpenAPI schemas using Zod",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maybemaby/zoapi"
+  },
   "scripts": {
     "test": "vitest",
     "lint": "biome lint",
@@ -16,9 +20,9 @@
   ],
   "exports": {
     ".": {
+      "types": "./dist/api.d.ts",
       "import": "./dist/api.js",
-      "require": "./dist/api.cjs",
-      "types": "./dist/api.d.ts"
+      "require": "./dist/api.cjs"
     }
   },
   "author": "https://github.com/maybemaby",

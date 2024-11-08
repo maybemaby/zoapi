@@ -53,6 +53,8 @@ describe("Api", () => {
                     },
                 }
             ]);
+
+            expect(doc.paths?.["/test"].get?.responses?.["201"].description).toEqual("");
         });
     })
 });
