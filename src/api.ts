@@ -19,9 +19,18 @@ type Method =
 
 type StatusCode = `${1 | 2 | 3 | 4 | 5}${string}`;
 
+type MediaType =
+	| "application/json"
+	| "application/xml"
+	| "text/plain"
+	| "text/html"
+	| "application/x-www-form-urlencoded"
+	| "multipart/form-data";
+
 type ResponseOptions = {
 	description?: string;
-}
+	mediaType?: MediaType;
+};
 
 class MethodBuilder {
 	pathBuilder: PathBuilder;
@@ -62,7 +71,11 @@ class MethodBuilder {
 		return this;
 	}
 
-	responds(statusCode: StatusCode, schema: z.ZodType, options?: ResponseOptions) {
+	responds(
+		statusCode: StatusCode,
+		schema: z.ZodType,
+		options?: ResponseOptions,
+	) {
 		this.responseSchema[statusCode] = schema;
 
 		if (options) {
@@ -125,7 +138,7 @@ class MethodBuilder {
 			op.tags = this.tags;
 		}
 
-		op.summary = this.summary
+		op.summary = this.summary;
 
 		return op;
 	}
