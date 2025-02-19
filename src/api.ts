@@ -19,13 +19,24 @@ type Method =
 
 type StatusCode = `${1 | 2 | 3 | 4 | 5}${string}`;
 
+type MediaType =
+	| "application/json"
+	| "application/xml"
+	| "text/plain"
+	| "text/html"
+	| "application/x-www-form-urlencoded"
+	| "multipart/form-data";
+
 type ResponseOptions = {
 	description?: string;
-}
+	mediaType?: MediaType;
+};
 
 class MethodBuilder {
 	pathBuilder: PathBuilder;
 	method: Method;
+	description?: string;
+	summary?: string;
 
 	pathSchema: z.AnyZodObject | null = null;
 	querySchema: z.AnyZodObject | null = null;
@@ -39,6 +50,7 @@ class MethodBuilder {
 		this.method = method;
 
 		this.pathBuilder.methodBuilders.push(this);
+		this.summary = `${method.toUpperCase()} ${pathBuilder.path}`;
 	}
 
 	pathParams(schema: z.AnyZodObject) {
@@ -59,7 +71,11 @@ class MethodBuilder {
 		return this;
 	}
 
-	responds(statusCode: StatusCode, schema: z.ZodType, options?: ResponseOptions) {
+	responds(
+		statusCode: StatusCode,
+		schema: z.ZodType,
+		options?: ResponseOptions,
+	) {
 		this.responseSchema[statusCode] = schema;
 
 		if (options) {
@@ -121,6 +137,8 @@ class MethodBuilder {
 		if (this.tags.length > 0) {
 			op.tags = this.tags;
 		}
+
+		op.summary = this.summary;
 
 		return op;
 	}
