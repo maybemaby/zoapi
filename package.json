@@ -1,6 +1,6 @@
 {
 	"name": "zoapi",
-	"version": "0.1.3",
+	"version": "0.2.0",
 	"description": "An ergonomic way to generate OpenAPI schemas using Zod",
 	"type": "module",
 	"repository": {
