@@ -1,230 +1,230 @@
 import type { z } from "zod";
 import {
-	type ZodOpenApiOperationObject,
-	type ZodOpenApiPathsObject,
-	createDocument,
+  type ZodOpenApiOperationObject,
+  type ZodOpenApiPathsObject,
+  createDocument,
 } from "zod-openapi";
 import type { ZodOpenApiObject } from "zod-openapi";
 import "zod-openapi/extend";
 
 type Method =
-	| "get"
-	| "post"
-	| "put"
-	| "delete"
-	| "options"
-	| "head"
-	| "patch"
-	| "trace";
+  | "get"
+  | "post"
+  | "put"
+  | "delete"
+  | "options"
+  | "head"
+  | "patch"
+  | "trace";
 
 type StatusCode = `${1 | 2 | 3 | 4 | 5}${string}`;
 
 type MediaType =
-	| "application/json"
-	| "application/xml"
-	| "text/plain"
-	| "text/html"
-	| "application/x-www-form-urlencoded"
-	| "multipart/form-data";
+  | "application/json"
+  | "application/xml"
+  | "text/plain"
+  | "text/html"
+  | "application/x-www-form-urlencoded"
+  | "multipart/form-data";
 
 type ResponseOptions = {
-	description?: string;
-	mediaType?: MediaType;
+  description?: string;
+  mediaType?: MediaType;
 };
 
 class MethodBuilder {
-	pathBuilder: PathBuilder;
-	method: Method;
-	description?: string;
-	summary?: string;
+  pathBuilder: PathBuilder;
+  method: Method;
+  description?: string;
+  summary?: string;
 
-	pathSchema: z.AnyZodObject | null = null;
-	querySchema: z.AnyZodObject | null = null;
-	bodySchema: z.ZodType | null = null;
-	responseSchema: Record<StatusCode, z.ZodType> = {};
-	responseOptions: Record<StatusCode, ResponseOptions> = {};
-	tags: string[] = [];
+  pathSchema: z.AnyZodObject | null = null;
+  querySchema: z.AnyZodObject | null = null;
+  bodySchema: z.ZodType | null = null;
+  responseSchema: Record<StatusCode, z.ZodType> = {};
+  responseOptions: Record<StatusCode, ResponseOptions> = {};
+  tags: string[] = [];
 
-	constructor(pathBuilder: PathBuilder, method: Method) {
-		this.pathBuilder = pathBuilder;
-		this.method = method;
+  constructor(pathBuilder: PathBuilder, method: Method) {
+    this.pathBuilder = pathBuilder;
+    this.method = method;
 
-		this.pathBuilder.methodBuilders.push(this);
-		this.summary = `${method.toUpperCase()} ${pathBuilder.path}`;
-	}
+    this.pathBuilder.methodBuilders.push(this);
+    this.summary = `${method.toUpperCase()} ${pathBuilder.path}`;
+  }
 
-	pathParams(schema: z.AnyZodObject) {
-		this.pathSchema = schema;
+  pathParams(schema: z.AnyZodObject) {
+    this.pathSchema = schema;
 
-		return this;
-	}
+    return this;
+  }
 
-	query(schema: z.AnyZodObject) {
-		this.querySchema = schema;
+  query(schema: z.AnyZodObject) {
+    this.querySchema = schema;
 
-		return this;
-	}
+    return this;
+  }
 
-	body(schema: z.ZodType) {
-		this.bodySchema = schema;
+  body(schema: z.ZodType) {
+    this.bodySchema = schema;
 
-		return this;
-	}
+    return this;
+  }
 
-	responds(
-		statusCode: StatusCode,
-		schema: z.ZodType,
-		options?: ResponseOptions,
-	) {
-		this.responseSchema[statusCode] = schema;
+  responds(
+    statusCode: StatusCode,
+    schema: z.ZodType,
+    options?: ResponseOptions,
+  ) {
+    this.responseSchema[statusCode] = schema;
 
-		if (options) {
-			this.responseOptions[statusCode] = options;
-		}
+    if (options) {
+      this.responseOptions[statusCode] = options;
+    }
 
-		return this;
-	}
+    return this;
+  }
 
-	withTags(tags: string[]) {
-		this.tags = tags;
-		return this;
-	}
+  withTags(tags: string[]) {
+    this.tags = tags;
+    return this;
+  }
 
-	build(): ZodOpenApiOperationObject {
-		const op: ZodOpenApiOperationObject = {
-			responses: {},
-		};
+  build(): ZodOpenApiOperationObject {
+    const op: ZodOpenApiOperationObject = {
+      responses: {},
+    };
 
-		if (this.pathSchema || this.querySchema) {
-			op.requestParams = {};
+    if (this.pathSchema || this.querySchema) {
+      op.requestParams = {};
 
-			if (this.pathSchema) {
-				op.requestParams.path = this.pathSchema;
-			}
+      if (this.pathSchema) {
+        op.requestParams.path = this.pathSchema;
+      }
 
-			if (this.querySchema) {
-				op.requestParams.query = this.querySchema;
-			}
-		}
+      if (this.querySchema) {
+        op.requestParams.query = this.querySchema;
+      }
+    }
 
-		if (this.bodySchema) {
-			op.requestBody = {
-				content: {
-					"application/json": {
-						schema: this.bodySchema,
-					},
-				},
-			};
-		}
+    if (this.bodySchema) {
+      op.requestBody = {
+        content: {
+          "application/json": {
+            schema: this.bodySchema,
+          },
+        },
+      };
+    }
 
-		if (Object.keys(this.responseSchema).length > 0) {
-			op.responses = {};
+    if (Object.keys(this.responseSchema).length > 0) {
+      op.responses = {};
 
-			for (const statusCode in this.responseSchema) {
-				const code = statusCode as StatusCode;
+      for (const statusCode in this.responseSchema) {
+        const code = statusCode as StatusCode;
 
-				op.responses[code] = {
-					content: {
-						"application/json": {
-							schema: this.responseSchema[code],
-						},
-					},
-					description: this.responseOptions[code]?.description ?? "",
-				};
-			}
-		}
+        op.responses[code] = {
+          content: {
+            "application/json": {
+              schema: this.responseSchema[code],
+            },
+          },
+          description: this.responseOptions[code]?.description ?? "",
+        };
+      }
+    }
 
-		if (this.tags.length > 0) {
-			op.tags = this.tags;
-		}
+    if (this.tags.length > 0) {
+      op.tags = this.tags;
+    }
 
-		op.summary = this.summary;
+    op.summary = this.summary;
 
-		return op;
-	}
+    return op;
+  }
 }
 
 class PathBuilder {
-	path: string;
-	methodBuilders: MethodBuilder[] = [];
+  path: string;
+  methodBuilders: MethodBuilder[] = [];
 
-	constructor(path: string) {
-		this.path = path;
-	}
+  constructor(path: string) {
+    this.path = path;
+  }
 
-	build(): ZodOpenApiPathsObject {
-		return {
-			[this.path]: this.methodBuilders.reduce(
-				(acc, mb) => {
-					acc[mb.method] = mb.build();
-					return acc;
-				},
-				{} as Record<Method, ZodOpenApiOperationObject>,
-			),
-		};
-	}
+  build(): ZodOpenApiPathsObject {
+    return {
+      [this.path]: this.methodBuilders.reduce(
+        (acc, mb) => {
+          acc[mb.method] = mb.build();
+          return acc;
+        },
+        {} as Record<Method, ZodOpenApiOperationObject>,
+      ),
+    };
+  }
 }
 
 export class Api {
-	paths: Record<string, PathBuilder> = {};
+  paths: Record<string, PathBuilder> = {};
 
-	public info: ZodOpenApiObject["info"];
-	public openapi: ZodOpenApiObject["openapi"];
+  public info: ZodOpenApiObject["info"];
+  public openapi: ZodOpenApiObject["openapi"];
 
-	constructor(
-		openapi: ZodOpenApiObject["openapi"],
-		info: ZodOpenApiObject["info"],
-	) {
-		this.info = info;
-		this.openapi = openapi;
-	}
+  constructor(
+    openapi: ZodOpenApiObject["openapi"],
+    info: ZodOpenApiObject["info"],
+  ) {
+    this.info = info;
+    this.openapi = openapi;
+  }
 
-	private method(path: string, method: Method): MethodBuilder {
-		const existingBuilder = this.paths[path];
+  private method(path: string, method: Method): MethodBuilder {
+    const existingBuilder = this.paths[path];
 
-		if (existingBuilder) {
-			return new MethodBuilder(existingBuilder, method);
-		}
+    if (existingBuilder) {
+      return new MethodBuilder(existingBuilder, method);
+    }
 
-		const pb = new PathBuilder(path);
-		this.paths[path] = pb;
+    const pb = new PathBuilder(path);
+    this.paths[path] = pb;
 
-		return new MethodBuilder(pb, method);
-	}
+    return new MethodBuilder(pb, method);
+  }
 
-	get(path: string): MethodBuilder {
-		return this.method(path, "get");
-	}
+  get(path: string): MethodBuilder {
+    return this.method(path, "get");
+  }
 
-	post(path: string): MethodBuilder {
-		return this.method(path, "post");
-	}
+  post(path: string): MethodBuilder {
+    return this.method(path, "post");
+  }
 
-	put(path: string): MethodBuilder {
-		return this.method(path, "put");
-	}
+  put(path: string): MethodBuilder {
+    return this.method(path, "put");
+  }
 
-	delete(path: string): MethodBuilder {
-		return this.method(path, "delete");
-	}
+  delete(path: string): MethodBuilder {
+    return this.method(path, "delete");
+  }
 
-	document(): ReturnType<typeof createDocument> {
-		const object: ZodOpenApiObject = {
-			info: this.info,
-			openapi: this.openapi,
-			paths: {},
-		};
+  document(): ReturnType<typeof createDocument> {
+    const object: ZodOpenApiObject = {
+      info: this.info,
+      openapi: this.openapi,
+      paths: {},
+    };
 
-		for (const path in this.paths) {
-			const pathBuilder = this.paths[path];
-			const pathObject = pathBuilder.build();
+    for (const path in this.paths) {
+      const pathBuilder = this.paths[path];
+      const pathObject = pathBuilder.build();
 
-			object.paths![path] = {
-				...object.paths![path],
-				...pathObject[path],
-			};
-		}
+      object.paths![path] = {
+        ...object.paths![path],
+        ...pathObject[path],
+      };
+    }
 
-		return createDocument(object);
-	}
+    return createDocument(object);
+  }
 }
